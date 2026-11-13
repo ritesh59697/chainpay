@@ -1,0 +1,290 @@
+-- | Tests for a four-tier chain:
+-- client (US retailer) -> prime (Indian IT firm) -> agency -> freelancer.
+module ChainPay.Tests.Chain where
+
+import Daml.Script
+import DA.Assert ((===))
+import DA.Foldable (forA_)
+import DA.Optional (fromSomeNote)
+import DA.Time (addRelTime, days)
+import ChainPay.Cash
+import ChainPay.Subcontract
+
+-- Fixture values for the tests only. The app reads the real ones from config.
+statutoryCap : Int
+statutoryCap = 45
+
+currencyCode : Text
+currencyCode = "INR"
+
+data Parties = Parties
+  with
+    client : Party
+    prime : Party
+    agency : Party
+    freelancer : Party
+    bank : Party
+
+data Chain = Chain
+  with
+    parties : Parties
+    clientLink : ContractId Subcontract
+    primeLink : ContractId Subcontract
+    agencyLink : ContractId Subcontract
+
+data Accepted = Accepted
+  with
+    clientOwes : ContractId PaymentObligation
+    primeOwes : ContractId PaymentObligation
+    agencyOwes : ContractId PaymentObligation
+
+termsFor : Text -> Text -> Decimal -> Int -> Terms
+termsFor milestone description amount termDays = Terms with
+  milestone = milestone
+  description = description
+  amount = amount
+  currency = currencyCode
+  termDays = termDays
+  statutoryMaxDays = statutoryCap
+
+link : Party -> Party -> Terms -> Optional Text -> Script (ContractId Subcontract)
+link payer payee terms upstream = do
+  proposal <- submit payer do
+    createCmd SubcontractProposal with
+      payer = payer
+      payee = payee
+      terms = terms
+      upstreamMilestone = upstream
+  submit payee do exerciseCmd proposal Sign
+
+setupChain : Script Chain
+setupChain = do
+  client <- allocateParty "Client"
+  prime <- allocateParty "Prime"
+  agency <- allocateParty "Agency"
+  freelancer <- allocateParty "Freelancer"
+  bank <- allocateParty "DemoBank"
+  let parties = Parties with ..
+  clientLink <- link client prime
+    (termsFor "RETAIL-CHECKOUT-M1" "Checkout feature" 1000000.0 45) None
+  primeLink <- link prime agency
+    (termsFor "PO-881-M1" "Checkout front end" 600000.0 45) (Some "RETAIL-CHECKOUT-M1")
+  agencyLink <- link agency freelancer
+    (termsFor "AG-17-M1" "React checkout screens" 350000.0 30) (Some "PO-881-M1")
+  pure Chain with ..
+
+triggerFrom : Party -> ContractId PaymentObligation -> Script (Optional UpstreamAcceptance)
+triggerFrom party cid = do
+  Some o <- queryContractId party cid
+  pure (Some UpstreamAcceptance with milestone = o.terms.milestone; acceptedAt = o.acceptedAt)
+
+-- | The client accepts, then each tier accepts its own supplier back to back,
+-- the way the automation will. No step fetches an upstream contract.
+cascade : Chain -> Script Accepted
+cascade chain = do
+  let p = chain.parties
+  clientOwes <- submit p.client do
+    exerciseCmd chain.clientLink AcceptMilestone with trigger = None
+  t1 <- triggerFrom p.prime clientOwes
+  primeOwes <- submit p.prime do
+    exerciseCmd chain.primeLink AcceptMilestone with trigger = t1
+  t2 <- triggerFrom p.agency primeOwes
+  agencyOwes <- submit p.agency do
+    exerciseCmd chain.agencyLink AcceptMilestone with trigger = t2
+  pure Accepted with ..
+
+issue : Party -> Party -> Decimal -> Script (ContractId DemoCash)
+issue bank owner amount = submit bank do
+  createCmd DemoCash with issuer = bank; owner = owner; amount = amount; currency = currencyCode
+
+-- | Split off the exact amount owed, then pay with it.
+payExact : Party -> ContractId DemoCash -> ContractId PaymentObligation -> Script (ContractId PaidReceipt, Optional (ContractId DemoCash))
+payExact payer cashCid owes = do
+  Some cash <- queryContractId payer cashCid
+  Some o <- queryContractId payer owes
+  (exact, rest) <-
+    if cash.amount == o.terms.amount
+      then pure (cashCid, None)
+      else do
+        (part, change) <- submit payer do exerciseCmd cashCid Split with splitAmount = o.terms.amount
+        pure (part, Some change)
+  receipt <- submit payer do exerciseCmd owes Pay with cashCid = exact
+  pure (receipt, rest)
+
+receivedBy : Party -> ContractId PaidReceipt -> Script (ContractId DemoCash)
+receivedBy party receiptCid = do
+  Some r <- queryContractId party receiptCid
+  pure r.received
+
+amountsVisibleTo : Party -> Script [Decimal]
+amountsVisibleTo party = do
+  subs <- query @Subcontract party
+  owes <- query @PaymentObligation party
+  receipts <- query @PaidReceipt party
+  cash <- query @DemoCash party
+  pure (map (\(_, c) -> c.terms.amount) subs
+    ++ map (\(_, c) -> c.terms.amount) owes
+    ++ map (\(_, c) -> c.terms.amount) receipts
+    ++ map (\(_, c) -> c.amount) cash)
+
+-- | Acceptance runs down the chain, every clock is set by that tier's own
+-- terms, and every tier is paid on time.
+testHappyPath : Script ()
+testHappyPath = do
+  chain <- setupChain
+  let p = chain.parties
+  acc <- cascade chain
+
+  Some co <- queryContractId p.client acc.clientOwes
+  Some po <- queryContractId p.prime acc.primeOwes
+  Some ao <- queryContractId p.agency acc.agencyOwes
+  co.dueAt === addRelTime co.acceptedAt (days 45)
+  po.dueAt === addRelTime po.acceptedAt (days 45)
+  ao.dueAt === addRelTime ao.acceptedAt (days 30)
+  po.trigger === Some UpstreamAcceptance with milestone = "RETAIL-CHECKOUT-M1"; acceptedAt = co.acceptedAt
+  ao.trigger === Some UpstreamAcceptance with milestone = "PO-881-M1"; acceptedAt = po.acceptedAt
+
+  clientCash <- issue p.bank p.client 1000000.0
+  (r1, _) <- payExact p.client clientCash acc.clientOwes
+  primeCash <- receivedBy p.prime r1
+  (r2, primeLeft) <- payExact p.prime primeCash acc.primeOwes
+  agencyCash <- receivedBy p.agency r2
+  (r3, agencyLeft) <- payExact p.agency agencyCash acc.agencyOwes
+
+  forA_ [(p.client, r1), (p.prime, r2), (p.agency, r3)] \(payer, r) -> do
+    Some receipt <- queryContractId payer r
+    receipt.onTime === True
+
+  Some left1 <- queryContractId p.prime (fromSomeNote "prime should get change" primeLeft)
+  left1.amount === 400000.0
+  Some left2 <- queryContractId p.agency (fromSomeNote "agency should get change" agencyLeft)
+  left2.amount === 250000.0
+  freelancerCash <- query @DemoCash p.freelancer
+  map (\(_, c) -> c.amount) freelancerCash === [350000.0]
+
+  -- Paid obligations are archived; only receipts remain.
+  owes <- query @PaymentObligation p.prime
+  owes === []
+
+-- | No tier can see a contract or an amount it is not a party to, at any
+-- stage: after signing, after the cascade and after payment.
+-- This checks each party's active contracts. The test against the running
+-- network also checks every event each party was sent.
+noUpstreamLeaks : Parties -> Script ()
+noUpstreamLeaks p = do
+  freelancerAmounts <- amountsVisibleTo p.freelancer
+  assertMsg "freelancer must not see the client or prime amounts"
+    (all (`notElem` freelancerAmounts) [1000000.0, 600000.0])
+  agencyAmounts <- amountsVisibleTo p.agency
+  assertMsg "agency must not see the client amount"
+    (1000000.0 `notElem` agencyAmounts)
+  -- The demo bank sees cash only, never the subcontracts.
+  bankSubs <- query @Subcontract p.bank
+  bankSubs === []
+  bankOwes <- query @PaymentObligation p.bank
+  bankOwes === []
+  bankReceipts <- query @PaidReceipt p.bank
+  bankReceipts === []
+
+testPrivacy : Script ()
+testPrivacy = do
+  chain <- setupChain
+  let p = chain.parties
+
+  -- Each tier sees only its own links.
+  freelancerSubs <- query @Subcontract p.freelancer
+  map fst freelancerSubs === [chain.agencyLink]
+  agencySubs <- query @Subcontract p.agency
+  length agencySubs === 2
+  assertMsg "agency sees both of its own links"
+    (all (`elem` map fst agencySubs) [chain.primeLink, chain.agencyLink])
+  none1 <- queryContractId p.freelancer chain.clientLink
+  none1 === None
+  none2 <- queryContractId p.freelancer chain.primeLink
+  none2 === None
+  none3 <- queryContractId p.agency chain.clientLink
+  none3 === None
+  noUpstreamLeaks p
+
+  acc <- cascade chain
+  freelancerOwes <- query @PaymentObligation p.freelancer
+  map fst freelancerOwes === [acc.agencyOwes]
+  noUpstreamLeaks p
+
+  clientCash <- issue p.bank p.client 1000000.0
+  (r1, _) <- payExact p.client clientCash acc.clientOwes
+  primeCash <- receivedBy p.prime r1
+  (r2, _) <- payExact p.prime primeCash acc.primeOwes
+  agencyCash <- receivedBy p.agency r2
+  (r3, _) <- payExact p.agency agencyCash acc.agencyOwes
+  freelancerReceipts <- query @PaidReceipt p.freelancer
+  map fst freelancerReceipts === [r3]
+  noUpstreamLeaks p
+
+-- | Paying after the due date is recorded as late, on the ledger.
+testLatePayment : Script ()
+testLatePayment = do
+  chain <- setupChain
+  let p = chain.parties
+  acc <- cascade chain
+  passTime (days 31)
+  agencyCash <- issue p.bank p.agency 350000.0
+  (r, _) <- payExact p.agency agencyCash acc.agencyOwes
+  Some receipt <- queryContractId p.agency r
+  receipt.onTime === False
+
+-- | The rules the ledger enforces.
+testGuards : Script ()
+testGuards = do
+  chain <- setupChain
+  let p = chain.parties
+
+  -- A term longer than the legal cap is rejected.
+  submitMustFail p.prime do
+    createCmd SubcontractProposal with
+      payer = p.prime
+      payee = p.agency
+      terms = termsFor "PO-999" "Too long" 1000.0 (statutoryCap + 1)
+      upstreamMilestone = None
+
+  -- Only the payer can accept the work.
+  submitMustFail p.freelancer do
+    exerciseCmd chain.agencyLink AcceptMilestone with trigger = None
+
+  -- A back-to-back trigger must name this link's upstream milestone.
+  now <- getTime
+  submitMustFail p.prime do
+    exerciseCmd chain.primeLink AcceptMilestone with
+      trigger = Some UpstreamAcceptance with milestone = "SOMETHING-ELSE"; acceptedAt = now
+
+  -- A trigger cannot claim an acceptance that has not happened yet.
+  submitMustFail p.prime do
+    exerciseCmd chain.primeLink AcceptMilestone with
+      trigger = Some UpstreamAcceptance with milestone = "RETAIL-CHECKOUT-M1"; acceptedAt = addRelTime now (days 1)
+
+  acc <- cascade chain
+
+  -- Paying with a holding that is not the exact amount is rejected.
+  bigCash <- issue p.bank p.client 2000000.0
+  submitMustFail p.client do
+    exerciseCmd acc.clientOwes Pay with cashCid = bigCash
+
+  -- Paying with someone else's cash is rejected.
+  primeCash <- issue p.bank p.prime 600000.0
+  submitMustFail p.agency do
+    exerciseCmd acc.agencyOwes Pay with cashCid = primeCash
+
+  -- Paying in another currency is rejected.
+  usd <- submit p.bank do
+    createCmd DemoCash with issuer = p.bank; owner = p.client; amount = 1000000.0; currency = "USD"
+  submitMustFail p.client do
+    exerciseCmd acc.clientOwes Pay with cashCid = usd
+
+  -- Only the payee can sign a proposal.
+  proposal <- submit p.agency do
+    createCmd SubcontractProposal with
+      payer = p.agency
+      payee = p.freelancer
+      terms = termsFor "AG-18" "Another task" 1000.0 15
+      upstreamMilestone = None
+  submitMustFail p.prime do exerciseCmd proposal Sign

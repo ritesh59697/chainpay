@@ -1,0 +1,10 @@
+sdk-version: 3.7.1
+name: chainpay-tests
+source: daml
+version: 0.1.0
+dependencies:
+  - daml-prim
+  - daml-stdlib
+  - daml-script
+data-dependencies:
+  - ../chainpay/.daml/dist/chainpay-0.1.0.dar

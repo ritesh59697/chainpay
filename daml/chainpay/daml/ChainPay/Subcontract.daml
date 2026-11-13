@@ -1,0 +1,145 @@
+-- | Subcontracts along a chain such as client -> prime -> agency -> freelancer.
+--
+-- Each link is its own contract, seen only by its two parties. When the end
+-- client accepts a milestone, every tier accepts its own supplier's work for
+-- the same milestone, which starts that tier's own payment clock.
+--
+-- Privacy rule: accepting a link never fetches the upstream contract. The
+-- upstream milestone id and acceptance time are passed in as plain values, so
+-- no tier is ever shown a contract (or an amount) it is not a party to.
+module ChainPay.Subcontract where
+
+import DA.Time (RelTime, addRelTime, days)
+import ChainPay.Cash
+
+-- | What one tier owes the next for one milestone.
+data Terms = Terms
+  with
+    milestone : Text
+      -- ^ Milestone id, shared by every link of the same chain.
+    description : Text
+    amount : Decimal
+    currency : Text
+    termDays : Int
+      -- ^ Agreed payment term, in days after acceptance.
+    statutoryMaxDays : Int
+      -- ^ Legal cap on the term, supplied by the app's configuration.
+  deriving (Eq, Show)
+
+validTerms : Terms -> Bool
+validTerms t =
+  t.milestone /= ""
+    && t.currency /= ""
+    && t.amount > 0.0
+    && t.termDays > 0
+    && t.statutoryMaxDays > 0
+    && t.termDays <= t.statutoryMaxDays
+
+termLength : Terms -> RelTime
+termLength t = days t.termDays
+
+-- | The acceptance upstream that triggered a back-to-back acceptance.
+data UpstreamAcceptance = UpstreamAcceptance
+  with
+    milestone : Text
+    acceptedAt : Time
+  deriving (Eq, Show)
+
+-- | The payer offers a subcontract; it binds once the payee signs.
+template SubcontractProposal
+  with
+    payer : Party
+    payee : Party
+    terms : Terms
+    upstreamMilestone : Optional Text
+      -- ^ For a back-to-back link: the payer's own client milestone.
+  where
+    signatory payer
+    observer payee
+    ensure validTerms terms && payer /= payee
+
+    choice Sign : ContractId Subcontract
+      controller payee
+      do create Subcontract with ..
+
+    choice Decline : ()
+      controller payee
+      do pure ()
+
+    choice Withdraw : ()
+      controller payer
+      do pure ()
+
+template Subcontract
+  with
+    payer : Party
+    payee : Party
+    terms : Terms
+    upstreamMilestone : Optional Text
+  where
+    signatory payer, payee
+    ensure validTerms terms && payer /= payee
+
+    -- | The payer accepts the payee's work. This starts the payment clock.
+    -- A back-to-back acceptance names the upstream acceptance that caused it.
+    choice AcceptMilestone : ContractId PaymentObligation
+      with
+        trigger : Optional UpstreamAcceptance
+      controller payer
+      do
+        now <- getTime
+        case trigger of
+          None -> pure ()
+          Some t -> do
+            assertMsg "trigger must be the upstream milestone of this link"
+              (upstreamMilestone == Some t.milestone)
+            assertMsg "trigger cannot be in the future" (t.acceptedAt <= now)
+        create PaymentObligation with
+          acceptedAt = now
+          dueAt = addRelTime now (termLength terms)
+          ..
+
+-- | Accepted work that now has to be paid by `dueAt`.
+template PaymentObligation
+  with
+    payer : Party
+    payee : Party
+    terms : Terms
+    upstreamMilestone : Optional Text
+    trigger : Optional UpstreamAcceptance
+    acceptedAt : Time
+    dueAt : Time
+  where
+    signatory payer, payee
+
+    -- | Pay with a holding of exactly the amount owed.
+    choice Pay : ContractId PaidReceipt
+      with
+        cashCid : ContractId DemoCash
+      controller payer
+      do
+        cash <- fetch cashCid
+        assertMsg "cash must belong to the payer" (cash.owner == payer)
+        assertMsg "cash must be in the agreed currency" (cash.currency == terms.currency)
+        assertMsg "pay with an exact holding; split it first" (cash.amount == terms.amount)
+        received <- exercise cashCid Transfer with newOwner = payee
+        paidAt <- getTime
+        create PaidReceipt with
+          onTime = paidAt <= dueAt
+          ..
+
+-- | Proof of payment, kept by both parties for their records.
+template PaidReceipt
+  with
+    payer : Party
+    payee : Party
+    terms : Terms
+    upstreamMilestone : Optional Text
+    trigger : Optional UpstreamAcceptance
+    acceptedAt : Time
+    dueAt : Time
+    paidAt : Time
+    onTime : Bool
+    received : ContractId DemoCash
+  where
+    signatory payer, payee

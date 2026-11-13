@@ -1,0 +1,20 @@
+{
+  "name": "chainpay-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "gen:api": "openapi-typescript ../daml/ledger-api/openapi.yaml -o src/generated/ledger-api.ts",
+    "typecheck": "tsc --noEmit",
+    "setup:chain": "tsx scripts/setup-chain.ts",
+    "automation": "tsx scripts/automation.ts",
+    "privacy": "tsx scripts/privacy-check.ts",
+    "e2e": "tsx scripts/e2e.ts",
+    "test": "tsx --test test/*.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "22.9.0",
+    "openapi-typescript": "7.4.4",
+    "tsx": "4.19.2",
+    "typescript": "5.6.3"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "currency": "INR",
+  "statutoryMaxDays": 45,
+  "statutorySource": "MSMED Act 2006, section 15: agreed payment terms to a micro or small supplier cannot exceed 45 days from acceptance",
+  "parties": [
+    { "key": "client", "hint": "RetailCo", "label": "US retailer (end client)" },
+    { "key": "prime", "hint": "AcmeIT", "label": "Indian IT services firm" },
+    { "key": "agency", "hint": "PixelStudio", "label": "Small dev agency (MSME)" },
+    { "key": "freelancer", "hint": "Priya", "label": "Freelance React developer" },
+    { "key": "bank", "hint": "DemoBank", "label": "Issuer of the demo payment token" }
+  ],
+  "links": [
+    { "payer": "client", "payee": "prime", "milestone": "RETAIL-CHECKOUT-M1", "description": "Checkout feature", "amount": "1000000", "termDays": 45 },
+    { "payer": "prime", "payee": "agency", "milestone": "PO-881-M1", "upstream": "RETAIL-CHECKOUT-M1", "description": "Checkout front end", "amount": "600000", "termDays": 45 },
+    { "payer": "agency", "payee": "freelancer", "milestone": "AG-17-M1", "upstream": "PO-881-M1", "description": "React checkout screens", "amount": "350000", "termDays": 30 }
+  ],
+  "funding": [
+    { "issuer": "bank", "to": "client", "amount": "1000000" }
+  ]
+}

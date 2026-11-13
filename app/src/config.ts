@@ -35,10 +35,25 @@ function damlPackage(): { name: string; version: string; darPath: string } {
   return { name, version, darPath: resolve(dir, ".daml/dist", `${name}-${version}.dar`) };
 }
 
+function topology(): "network" | "sandbox" {
+  const value = required("LEDGER_TOPOLOGY");
+  if (value !== "network" && value !== "sandbox") throw new Error('LEDGER_TOPOLOGY must be "network" or "sandbox"');
+  return value;
+}
+
+const mode = topology();
+
 export const config = {
-  ledgerUrl: required("LEDGER_URL"),
+  topology: mode,
+  // Sandbox mode: the one node every party shares.
+  ledgerUrl: mode === "sandbox" ? required("LEDGER_URL") : "",
+  // Network mode: one node per firm, listed in the network file.
+  networkFile: mode === "network" ? resolve(repoRoot, required("NETWORK_FILE")) : "",
+  networkHost: mode === "network" ? required("NETWORK_HOST") : "",
   userId: required("LEDGER_USER_ID"),
   pollMs: positiveInt("AUTOMATION_POLL_MS"),
+  // How long to wait for one node to see what another node just committed.
+  settleMs: positiveInt("SETTLE_TIMEOUT_MS"),
   scenarioFile: resolve(repoRoot, required("SCENARIO_FILE")),
   runFile: resolve(repoRoot, required("RUN_FILE")),
   daml: damlPackage(),

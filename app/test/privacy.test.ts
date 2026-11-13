@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { Templates } from "../src/contracts.js";
 import type { Ledger, Transaction } from "../src/ledger.js";
+import type { Nodes } from "../src/network.js";
 import { checkPrivacy } from "../src/privacy.js";
 import type { RunState, Scenario } from "../src/scenario.js";
 
@@ -22,21 +23,28 @@ const scenario: Scenario = {
   ],
   funding: [],
 };
-const run: RunState = { runId: "t", startOffset: 0, parties: { prime: { id: "P::1", label: "" }, agency: { id: "A::1", label: "" }, freelancer: { id: "F::1", label: "" } } };
+const run: RunState = {
+  runId: "t",
+  startOffsets: { "node-prime": 0, "node-agency": 0, "node-freelancer": 0 },
+  parties: {
+    prime: { id: "P::1", label: "", node: "node-prime" },
+    agency: { id: "A::1", label: "", node: "node-agency" },
+    freelancer: { id: "F::1", label: "", node: "node-freelancer" },
+  },
+};
 
 const created = (templateId: string, contractId: string, args: object, signatories: string[], observers: string[] = []) => ({
   CreatedEvent: { templateId: templateId.replace("#", "pkg"), contractId, createArgument: args, signatories, observers },
 });
 
-function fakeLedger(seen: Record<string, unknown[]>): Ledger {
-  return {
-    ledgerEnd: async () => 10,
-    // `seen` is keyed by scenario key; the checker asks by party id.
-    transactionsSeenBy: async (partyId: string) => {
-      const key = Object.entries(run.parties).find(([, p]) => p.id === partyId)?.[0] ?? "";
-      return [{ events: seen[key] ?? [] } as unknown as Transaction];
-    },
-  } as unknown as Ledger;
+/** One fake node per party; `seen` lists what reached each party's node. */
+function fakeLedger(seen: Record<string, unknown[]>): Nodes {
+  const ledgerOf = (key: string) =>
+    ({
+      ledgerEnd: async () => 10,
+      transactionsSeenBy: async () => [{ events: seen[key] ?? [] } as unknown as Transaction],
+    }) as unknown as Ledger;
+  return { of: ledgerOf, nodeOf: (key: string) => `node-${key}` } as unknown as Nodes;
 }
 
 const upstreamLink = created(Templates.Subcontract, "c-up", { payer: "P::1", payee: "A::1", terms: { amount: "600000.0000000000" } }, ["P::1", "A::1"]);

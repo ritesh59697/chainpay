@@ -12,16 +12,33 @@ import {
   sameAmount,
 } from "./contracts.js";
 import type { Ledger } from "./ledger.js";
+import type { Nodes } from "./network.js";
+import { eventually } from "./settle.js";
 import { type RunState, type Scenario, partyId } from "./scenario.js";
 
-/** Uploads the contracts, allocates the run's parties and signs every link. */
-export async function setupChain(ledger: Ledger, scenario: Scenario, runId: string): Promise<RunState> {
-  await ledger.uploadDar(readFileSync(config.daml.darPath));
-  const startOffset = await ledger.ledgerEnd();
+/**
+ * Uploads the contracts to every node, allocates each party on its own node,
+ * then signs every link and funds the payers. Each step is submitted by the
+ * party's own node; the next step waits until the other node has caught up.
+ */
+export async function setupChain(nodes: Nodes, scenario: Scenario, runId: string): Promise<RunState> {
+  const dar = readFileSync(config.daml.darPath);
+  const run: RunState = { runId, startOffsets: {}, parties: {} };
+  for (const { node, ledger } of nodes.all) {
+    await ledger.uploadDar(dar);
+    run.startOffsets[node] = await ledger.ledgerEnd();
+  }
 
-  const run: RunState = { runId, startOffset, parties: {} };
   for (const p of scenario.parties) {
-    run.parties[p.key] = { id: await ledger.allocateParty(`${p.hint}-${runId}`), label: p.label };
+    const id = await nodes.of(p.key).allocateParty(`${p.hint}-${runId}`);
+    run.parties[p.key] = { id, label: p.label, node: nodes.nodeOf(p.key) };
+  }
+  const ids = Object.values(run.parties).map((p) => p.id);
+  for (const { node, ledger } of nodes.all) {
+    await eventually(`${node} to learn every party`, async () => {
+      const known = new Set(await ledger.listParties());
+      return ids.every((id) => known.has(id)) || undefined;
+    });
   }
 
   for (const link of scenario.links) {
@@ -40,16 +57,20 @@ export async function setupChain(ledger: Ledger, scenario: Scenario, runId: stri
       },
       upstreamMilestone: link.upstream ?? null,
     };
-    const tx = await ledger.submit(payer, [create(Templates.Proposal, proposal)]);
+    const tx = await eventually(`${link.payer} to propose ${link.milestone}`, () =>
+      nodes.of(link.payer).submit(payer, [create(Templates.Proposal, proposal)]),
+    );
     const proposalId = createdIds(tx.events, Templates.Proposal)[0];
     if (!proposalId) throw new Error(`proposal for ${link.milestone} was not created`);
-    await ledger.submit(payee, [exercise(Templates.Proposal, proposalId, "Sign", {})]);
+    await eventually(`${link.payee} to sign ${link.milestone}`, () =>
+      nodes.of(link.payee).submit(payee, [exercise(Templates.Proposal, proposalId, "Sign", {})]),
+    );
   }
 
   for (const f of scenario.funding) {
     const issuer = partyId(run, f.issuer);
     const cash: Cash = { issuer, owner: partyId(run, f.to), amount: f.amount, currency: scenario.currency };
-    await ledger.submit(issuer, [create(Templates.Cash, cash)]);
+    await eventually(`${f.issuer} to fund ${f.to}`, () => nodes.of(f.issuer).submit(issuer, [create(Templates.Cash, cash)]));
   }
   return run;
 }
@@ -102,10 +123,14 @@ export async function payAll(ledger: Ledger, payer: string): Promise<string[]> {
   const paid: string[] = [];
   const owed = (await ledger.active<Obligation>(payer, Templates.Obligation)).filter((o) => o.payload.payer === payer);
   for (const o of owed) {
-    const holdings = (await ledger.active<Cash>(payer, Templates.Cash)).filter(
-      (c) => c.payload.owner === payer && c.payload.currency === o.payload.terms.currency,
-    );
     const amount = o.payload.terms.amount;
+    // Money just received from upstream may still be on its way to this node.
+    const holdings = await eventually(`${payer} to hold enough to pay ${o.payload.terms.milestone}`, async () => {
+      const mine = (await ledger.active<Cash>(payer, Templates.Cash)).filter(
+        (c) => c.payload.owner === payer && c.payload.currency === o.payload.terms.currency,
+      );
+      return mine.some((c) => Number(c.payload.amount) >= Number(amount)) ? mine : undefined;
+    });
     let cashId = holdings.find((c) => sameAmount(c.payload.amount, amount))?.contractId;
     if (!cashId) {
       const big = holdings.find((c) => Number(c.payload.amount) > Number(amount));

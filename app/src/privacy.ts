@@ -1,10 +1,14 @@
 import { Templates, normDecimal } from "./contracts.js";
-import type { Event, Ledger } from "./ledger.js";
+import { config } from "./config.js";
+import type { Event } from "./ledger.js";
+import type { Nodes } from "./network.js";
 import { type RunState, type Scenario, partyId } from "./scenario.js";
 
 export interface PrivacyReport {
   party: string;
   label: string;
+  /** "node": everything the party's own node stored; "party": the party's view on a shared node. */
+  scope: "node" | "party";
   transactions: number;
   events: number;
   ownAmounts: string[];
@@ -24,21 +28,28 @@ function decimalsIn(value: unknown, out: string[] = []): string[] {
 
 /**
  * Reads every transaction each party was sent, in full, and checks that:
+ * (on a network with a node per firm, it reads everything that reached the
+ * firm's node, for any party, which is the stronger check)
  *  1. every subcontract, obligation or receipt it was shown is one it is a party to;
  *  2. the only other contracts it saw are the exact payment it made or received;
  *  3. no amount appears anywhere except amounts from its own links and its own
  *     cash (the demo token issuer is a party to all token holdings, like a bank,
  *     but never to a subcontract).
  */
-export async function checkPrivacy(ledger: Ledger, scenario: Scenario, run: RunState): Promise<PrivacyReport[]> {
-  const end = await ledger.ledgerEnd();
+export async function checkPrivacy(nodes: Nodes, scenario: Scenario, run: RunState): Promise<PrivacyReport[]> {
   const reports: PrivacyReport[] = [];
+  const scope = config.topology === "network" ? "node" : "party";
 
   for (const p of scenario.parties) {
     const me = partyId(run, p.key);
+    const ledger = nodes.of(p.key);
+    const node = nodes.nodeOf(p.key);
+    const start = run.startOffsets[node];
+    if (start === undefined) throw new Error(`run has no start offset for node ${node}`);
+    const end = await ledger.ledgerEnd();
     const ownLinks = scenario.links.filter((l) => l.payer === p.key || l.payee === p.key);
     const allowed = new Set(ownLinks.map((l) => normDecimal(l.amount)));
-    const txs = await ledger.transactionsSeenBy(me, run.startOffset, end);
+    const txs = await ledger.transactionsSeenBy(scope === "node" ? null : me, start, end);
     const events: Event[] = txs.flatMap((t) => t.events ?? []);
     const problems: string[] = [];
     const stakeholderOf = new Set<string>();
@@ -78,6 +89,7 @@ export async function checkPrivacy(ledger: Ledger, scenario: Scenario, run: RunS
     reports.push({
       party: p.key,
       label: p.label,
+      scope,
       transactions: txs.length,
       events: events.length,
       ownAmounts: [...new Set(ownLinks.map((l) => normDecimal(l.amount)))],
@@ -85,4 +97,20 @@ export async function checkPrivacy(ledger: Ledger, scenario: Scenario, run: RunS
     });
   }
   return reports;
+}
+
+/** For each milestone, the nodes that ever stored a contract about it during the run. */
+export async function whereContractsLive(nodes: Nodes, run: RunState): Promise<Map<string, string[]>> {
+  const where = new Map<string, Set<string>>();
+  for (const { node, ledger } of nodes.all) {
+    const start = run.startOffsets[node];
+    if (start === undefined) throw new Error(`run has no start offset for node ${node}`);
+    const txs = await ledger.transactionsSeenBy(null, start, await ledger.ledgerEnd());
+    for (const e of txs.flatMap((t) => t.events ?? [])) {
+      if (!("CreatedEvent" in e)) continue;
+      const milestone = (e.CreatedEvent.createArgument as { terms?: { milestone?: string } }).terms?.milestone;
+      if (milestone) where.set(milestone, (where.get(milestone) ?? new Set()).add(node));
+    }
+  }
+  return new Map([...where].map(([m, s]) => [m, [...s]]));
 }

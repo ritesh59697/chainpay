@@ -5,11 +5,9 @@
   "scripts": {
     "gen:api": "openapi-typescript ../daml/ledger-api/openapi.yaml -o src/generated/ledger-api.ts",
     "typecheck": "tsc --noEmit",
-    "setup:chain": "tsx scripts/setup-chain.ts",
-    "automation": "tsx scripts/automation.ts",
-    "privacy": "tsx scripts/privacy-check.ts",
     "e2e": "tsx scripts/e2e.ts",
-    "test": "tsx --test test/*.test.ts"
+    "test": "tsx --test test/*.test.ts",
+    "network": "tsx scripts/network.ts"
   },
   "devDependencies": {
     "@types/node": "22.9.0",

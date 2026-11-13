@@ -93,19 +93,17 @@ export class Ledger {
   }
 
   /**
-   * Every transaction `party` was sent between two offsets, in full
-   * (ledger-effects shape), including events it only witnessed.
+   * Every transaction between two offsets, in full (ledger-effects shape),
+   * including events only witnessed: for one party, or with `party` null,
+   * everything this node stored for any party it hosts.
    */
-  async transactionsSeenBy(party: string, beginExclusive: number, endInclusive: number): Promise<Transaction[]> {
+  async transactionsSeenBy(party: string | null, beginExclusive: number, endInclusive: number): Promise<Transaction[]> {
+    const filters = { cumulative: [wildcard] };
+    const eventFormat = party ? { filtersByParty: { [party]: filters }, verbose: true } : { filtersByParty: {}, filtersForAnyParty: filters, verbose: true };
     const res = await this.call<S["JsGetUpdatesResponse"][]>("POST", "/v2/updates", {
       beginExclusive,
       endInclusive,
-      updateFormat: {
-        includeTransactions: {
-          transactionShape: "TRANSACTION_SHAPE_LEDGER_EFFECTS",
-          eventFormat: { filtersByParty: { [party]: { cumulative: [wildcard] } }, verbose: true },
-        },
-      },
+      updateFormat: { includeTransactions: { transactionShape: "TRANSACTION_SHAPE_LEDGER_EFFECTS", eventFormat } },
     });
     return res.flatMap((r) => (r.update && "Transaction" in r.update ? [r.update.Transaction.value] : []));
   }

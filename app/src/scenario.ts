@@ -44,8 +44,9 @@ export function loadScenario(path = config.scenarioFile): Scenario {
 /** The parties and starting offset of one demo run, written by setup. */
 export interface RunState {
   runId: string;
-  startOffset: number;
-  parties: Record<string, { id: string; label: string }>;
+  /** Ledger end of each node before the run, so checks only read this run. */
+  startOffsets: Record<string, number>;
+  parties: Record<string, { id: string; label: string; node: string }>;
 }
 
 export function saveRun(run: RunState, path = config.runFile): void {
@@ -54,7 +55,7 @@ export function saveRun(run: RunState, path = config.runFile): void {
 }
 
 export function loadRun(path = config.runFile): RunState {
-  if (!existsSync(path)) throw new Error(`No run found at ${path}. Run "npm run setup:chain" first.`);
+  if (!existsSync(path)) throw new Error(`No run found at ${path}. Run "npm run e2e" first.`);
   return JSON.parse(readFileSync(path, "utf8")) as RunState;
 }
 

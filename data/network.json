@@ -1,0 +1,12 @@
+{
+  "synchronizer": "chainpay",
+  "sequencer": { "publicPort": 10001, "adminPort": 10002 },
+  "mediator": { "adminPort": 10003 },
+  "nodes": [
+    { "name": "retailco",    "hosts": ["client"],     "ledgerPort": 10111, "adminPort": 10112, "httpPort": 10113 },
+    { "name": "acmeit",      "hosts": ["prime"],      "ledgerPort": 10121, "adminPort": 10122, "httpPort": 10123 },
+    { "name": "pixelstudio", "hosts": ["agency"],     "ledgerPort": 10131, "adminPort": 10132, "httpPort": 10133 },
+    { "name": "priya",       "hosts": ["freelancer"], "ledgerPort": 10141, "adminPort": 10142, "httpPort": 10143 },
+    { "name": "demobank",    "hosts": ["bank"],       "ledgerPort": 10151, "adminPort": 10152, "httpPort": 10153 }
+  ]
+}

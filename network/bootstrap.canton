@@ -1,0 +1,21 @@
+// Starts one synchronizer and connects every participant node to it.
+// The synchronizer name is passed in by app/scripts/network.ts.
+import com.digitalasset.canton.config.RequireTypes.PositiveInt
+import com.digitalasset.canton.version.ProtocolVersion
+
+val synchronizerName = sys.env("CHAINPAY_SYNCHRONIZER")
+val sequencer = sequencers.local.head
+val mediator = mediators.local.head
+
+val params = StaticSynchronizerParameters.defaults(
+  sequencer.config.crypto,
+  ProtocolVersion.forSynchronizer,
+  topologyChangeDelay = NonNegativeFiniteDuration.Zero,
+)
+bootstrap.synchronizer(synchronizerName, Seq(sequencer), Seq(mediator), Seq(sequencer, mediator), PositiveInt.one, params)
+
+participants.local.foreach { p =>
+  p.synchronizers.connect_local(sequencer, synchronizerName)
+  println(s"${p.name} JSON Ledger API on port ${p.config.httpLedgerApi.port.unwrap}")
+}
+println("ChainPay network is ready.")

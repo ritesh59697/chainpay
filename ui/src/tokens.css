@@ -1,0 +1,60 @@
+/* ChainPay tokens. Dials: variance 4, motion 4, density 6.
+   Paper-and-ink ledger; one accent (ledger green) for primary actions and the accepted state. */
+:root {
+  --color-bg: #f5f3ee;
+  --color-surface: #fcfbf8;
+  --color-surface-2: #efece5;
+  --color-border: #dcd8ce;
+  --color-text: #1d1c19;
+  --color-text-muted: #635f56;
+  --color-accent: #0b6b55;
+  --color-accent-soft: #dcebe5;
+  --color-accent-fg: #f6fbf9;
+  --color-destructive: #b02a1f;
+  --color-destructive-soft: #f6e1de;
+
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  /* 1.2 scale from 14px */
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-md: 17px;
+  --text-lg: 20px;
+  --text-xl: 24px;
+  --text-2xl: 29px;
+
+  --radius: 3px;
+  --radius-sm: calc(var(--radius) / 2);
+  --radius-lg: calc(var(--radius) * 2);
+
+  --space: 4px;
+
+  --duration-fast: 120ms;
+  --duration-base: 240ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg: #121311;
+    --color-surface: #1a1b19;
+    --color-surface-2: #222420;
+    --color-border: #33352f;
+    --color-text: #e9e7e1;
+    --color-text-muted: #a19d93;
+    --color-accent: #4fb596;
+    --color-accent-soft: #19332b;
+    --color-accent-fg: #07130f;
+    --color-destructive: #ec7a6f;
+    --color-destructive-soft: #3a1d1a;
+    color-scheme: dark;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

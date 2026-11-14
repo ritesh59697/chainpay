@@ -80,6 +80,17 @@ export function App() {
         </section>
       ) : (
         <>
+          {meta.rules.length > 0 && (
+            <section className="rules" aria-label="The rule this tracks">
+              {meta.rules.map((r) => (
+                <div className="rule" key={r.headline}>
+                  <p className="rule-head">{r.headline}</p>
+                  <p className="rule-text">{r.text}</p>
+                  <p className="rule-source">{r.source}</p>
+                </div>
+              ))}
+            </section>
+          )}
           <section className="panes" aria-label="Each firm's own view">
             {meta.panes.map((p, i) => (
               <div className="pane-slot" key={`${meta.runId}-${p.key}`}>
@@ -94,8 +105,8 @@ export function App() {
           </section>
           <PrivacyPanel key={meta.runId} meta={meta} />
           <footer className="footnote">
-            Payment terms are capped at {meta.statutoryMaxDays} days ({meta.statutorySource}). Amounts move as a demo token,
-            not real money. Not tax or legal advice.
+            The rules apply only to suppliers registered (Udyam) as micro or small enterprises; the demo firms are stated as
+            registered. Amounts move as a demo token, not real money. ChainPay tracks dates; it isn't tax or legal advice.
           </footer>
         </>
       )}

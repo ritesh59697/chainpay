@@ -31,6 +31,7 @@ export interface Meta {
   pollMs: number;
   statutoryMaxDays: number;
   statutorySource: string;
+  rules: { headline: string; text: string; source: string }[];
   currency: string;
   nodes: string[];
   parties: { key: string; hint: string; node: string }[];

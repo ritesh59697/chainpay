@@ -83,6 +83,7 @@ const routes: Record<string, (req: IncomingMessage, params: string[]) => Promise
     pollMs: config.pollMs,
     statutoryMaxDays: scenario.statutoryMaxDays,
     statutorySource: scenario.statutorySource,
+    rules: scenario.rules,
     currency: scenario.currency,
     nodes: nodes.all.map((n) => n.node),
     parties: scenario.parties.map((p) => ({ key: p.key, hint: p.hint, node: nodes.nodeOf(p.key) })),

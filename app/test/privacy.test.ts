@@ -12,6 +12,7 @@ const scenario: Scenario = {
   currency: "INR",
   statutoryMaxDays: 45,
   statutorySource: "test",
+  rules: [],
   parties: [
     { key: "prime", hint: "P", label: "prime" },
     { key: "agency", hint: "A", label: "agency" },

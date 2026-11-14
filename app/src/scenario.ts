@@ -18,10 +18,18 @@ export interface ScenarioLink {
   termDays: number;
 }
 
+export interface Rule {
+  headline: string;
+  text: string;
+  source: string;
+}
+
 export interface Scenario {
   currency: string;
   statutoryMaxDays: number;
   statutorySource: string;
+  /** The legal context shown on the demo screen, with sources. */
+  rules: Rule[];
   parties: ScenarioParty[];
   links: ScenarioLink[];
   funding: { issuer: string; to: string; amount: string }[];

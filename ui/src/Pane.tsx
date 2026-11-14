@@ -193,7 +193,7 @@ function Clock45({ link }: { link: LinkView }) {
     <div className="clock">
       <p className="clock-line">
         <Clock size={12} aria-hidden />
-        Due {shortDate(link.dueAt)}, day {day} of {link.termDays}
+        {link.role === "payer" ? "Pay by" : "Due"} {shortDate(link.dueAt)}, day {day} of {link.termDays}
       </p>
       <div className="clock-bar" role="progressbar" aria-valuemin={0} aria-valuemax={link.termDays} aria-valuenow={day}>
         <span style={{ transform: `scaleX(${pct / 100})` }} />

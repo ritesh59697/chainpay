@@ -23,7 +23,7 @@ function positiveInt(name: string): number {
 
 /** Reads `name` and `version` from the contracts package's daml.yaml. */
 function damlPackage(): { name: string; version: string; darPath: string } {
-  const dir = resolve(repoRoot, "daml/chainpay");
+  const dir = resolve(repoRoot, "daml/sluice");
   const yaml = readFileSync(resolve(dir, "daml.yaml"), "utf8");
   const field = (key: string) => {
     const match = yaml.match(new RegExp(`^${key}:\\s*(\\S+)`, "m"));

@@ -1,5 +1,5 @@
 {
-  "name": "chainpay-app",
+  "name": "sluice-app",
   "private": true,
   "type": "module",
   "scripts": {

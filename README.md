@@ -1,8 +1,8 @@
-# ChainPay
+# Sluice
 
 **One client sign-off pays the whole subcontract chain on time, and no firm sees anyone else's contract.**
 
-Built on Canton (Daml) for HackCanton Season 4, RWA & Business Workflows track.
+Built on Canton (Daml) for HackCanton Season 4, RWA & Business Workflows track. The name comes from a sluice gate, which lets water through one stage at a time, the way payment moves from client to prime to agency to freelancer.
 
 ![Four firms, four nodes: the client has accepted, and every tier's payment clock has started](docs/demo-accepted.png)
 
@@ -12,7 +12,7 @@ Indian IT work flows down chains: a US retailer pays an Indian IT firm, which pa
 
 The client's sign-off rarely reaches the bottom of the chain on time. And no tier will share its contract to fix that, because the contract shows its margin.
 
-## What ChainPay does
+## What Sluice does
 
 - Each link in the chain (client → IT firm → agency → freelancer) is its own Daml contract, signed by its two firms only.
 - When the client accepts the work, each firm's automation accepts its supplier's work **back to back**, on its own node. That starts each tier's own 45-day clock, with its own due date.
@@ -56,8 +56,8 @@ The checker has its own tests that feed it planted leaks, so its "ok" means some
 
 | Path | What it is |
 |---|---|
-| `daml/chainpay` | The contracts: subcontract proposal and link, payment obligation, receipt, demo token |
-| `daml/chainpay-tests` | Daml Script tests: back-to-back cascade, privacy at every stage, late payment, 8 guard cases |
+| `daml/sluice` | The contracts: subcontract proposal and link, payment obligation, receipt, demo token |
+| `daml/sluice-tests` | Daml Script tests: back-to-back cascade, privacy at every stage, late payment, 8 guard cases |
 | `app` | TypeScript on the Canton JSON Ledger API v2 (types generated from its OpenAPI spec): the local network launcher, chain setup, back-to-back automation, payments, privacy check, and the demo API |
 | `ui` | The demo screen (Vite + React): four panes, one per firm |
 | `data/demo-scenario.json` | The demo chain: firms, amounts, terms, and the legal rules shown on screen, with sources |
@@ -69,7 +69,7 @@ Needs the Daml SDK (`dpm`) 3.7, Java 17+ and Node 22+. On Apple Silicon, also Ro
 
 ```bash
 dpm build --all
-cd daml/chainpay-tests && dpm test && cd ../..
+cd daml/sluice-tests && dpm test && cd ../..
 ```
 
 ```bash
@@ -89,7 +89,7 @@ All ports and settings live in `app/.env` and `data/network.json`. To use one `d
 ## Honest limits
 
 - Payments use a **demo token**, not money. Real firms would settle in INR over bank rails, with Canton holding the acceptances, obligations and proof of payment.
-- The rules apply only to suppliers registered (Udyam) as micro or small enterprises; the demo firms are stated as registered. ChainPay tracks dates. It isn't tax or legal advice.
+- The rules apply only to suppliers registered (Udyam) as micro or small enterprises; the demo firms are stated as registered. Sluice tracks dates. It isn't tax or legal advice.
 - The token's issuer sees token movements, as a bank would. It never sees a subcontract.
 - A back-to-back acceptance carries the upstream milestone id and acceptance time as proof of why it happened. So a payee learns *that* its payer's own client accepted, and when, but never the upstream contract, parties' terms or amount.
 - The network runs every node on one machine, in memory. It shows what each node receives; it isn't a production deployment.

@@ -1,4 +1,4 @@
-/* ChainPay tokens. Dials: variance 4, motion 4, density 6.
+/* Sluice tokens. Dials: variance 4, motion 4, density 6.
    Paper-and-ink ledger; one accent (ledger green) for primary actions and the accepted state. */
 :root {
   --color-bg: #f5f3ee;

@@ -7,10 +7,10 @@
 -- Privacy rule: accepting a link never fetches the upstream contract. The
 -- upstream milestone id and acceptance time are passed in as plain values, so
 -- no tier is ever shown a contract (or an amount) it is not a party to.
-module ChainPay.Subcontract where
+module Sluice.Subcontract where
 
 import DA.Time (RelTime, addRelTime, days)
-import ChainPay.Cash
+import Sluice.Cash
 
 -- | What one tier owes the next for one milestone.
 data Terms = Terms

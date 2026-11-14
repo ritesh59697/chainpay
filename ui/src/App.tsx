@@ -37,7 +37,7 @@ export function App() {
   if (!meta) {
     return (
       <main className="shell">
-        <p className="muted">{error ? `Can't reach the ChainPay API: ${error}` : "Connecting to the ChainPay API…"}</p>
+        <p className="muted">{error ? `Can't reach the Sluice API: ${error}` : "Connecting to the Sluice API…"}</p>
       </main>
     );
   }
@@ -46,7 +46,7 @@ export function App() {
     <main className="shell">
       <header className="topbar">
         <div>
-          <h1 className="wordmark">ChainPay</h1>
+          <h1 className="wordmark">Sluice</h1>
           <p className="tagline">
             One client sign-off pays the whole subcontract chain on time. Each firm sees only its own contracts.
           </p>
@@ -106,7 +106,7 @@ export function App() {
           <PrivacyPanel key={meta.runId} meta={meta} />
           <footer className="footnote">
             The rules apply only to suppliers registered (Udyam) as micro or small enterprises; the demo firms are stated as
-            registered. Amounts move as a demo token, not real money. ChainPay tracks dates; it isn't tax or legal advice.
+            registered. Amounts move as a demo token, not real money. Sluice tracks dates; it isn't tax or legal advice.
           </footer>
         </>
       )}

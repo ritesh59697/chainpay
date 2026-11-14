@@ -1,14 +1,14 @@
 -- | Tests for a four-tier chain:
 -- client (US retailer) -> prime (Indian IT firm) -> agency -> freelancer.
-module ChainPay.Tests.Chain where
+module Sluice.Tests.Chain where
 
 import Daml.Script
 import DA.Assert ((===))
 import DA.Foldable (forA_)
 import DA.Optional (fromSomeNote)
 import DA.Time (addRelTime, days)
-import ChainPay.Cash
-import ChainPay.Subcontract
+import Sluice.Cash
+import Sluice.Subcontract
 
 -- Fixture values for the tests only. The app reads the real ones from config.
 statutoryCap : Int

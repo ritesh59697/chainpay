@@ -3,7 +3,7 @@
 import com.digitalasset.canton.config.RequireTypes.PositiveInt
 import com.digitalasset.canton.version.ProtocolVersion
 
-val synchronizerName = sys.env("CHAINPAY_SYNCHRONIZER")
+val synchronizerName = sys.env("SLUICE_SYNCHRONIZER")
 val sequencer = sequencers.local.head
 val mediator = mediators.local.head
 
@@ -18,4 +18,4 @@ participants.local.foreach { p =>
   p.synchronizers.connect_local(sequencer, synchronizerName)
   println(s"${p.name} JSON Ledger API on port ${p.config.httpLedgerApi.port.unwrap}")
 }
-println("ChainPay network is ready.")
+println("Sluice network is ready.")

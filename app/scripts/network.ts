@@ -16,7 +16,7 @@ console.log(`Starting ${network.nodes.length} participant nodes: ${network.nodes
 const canton = spawn(
   "java",
   ["-jar", cantonJar(), "daemon", "--no-tty", "-c", conf, "--bootstrap", resolve(repoRoot, "network/bootstrap.canton"), "--log-file-name", resolve(dir, "canton.log")],
-  { cwd: dir, stdio: "inherit", env: { ...process.env, CHAINPAY_SYNCHRONIZER: network.synchronizer } },
+  { cwd: dir, stdio: "inherit", env: { ...process.env, SLUICE_SYNCHRONIZER: network.synchronizer } },
 );
 for (const sig of ["SIGINT", "SIGTERM"] as const) process.on(sig, () => canton.kill(sig));
 canton.on("exit", (code) => process.exit(code ?? 0));

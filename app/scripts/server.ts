@@ -174,5 +174,5 @@ const server = createServer(async (req, res) => {
 });
 
 await restoreRun();
-server.listen(port, () => console.log(`ChainPay API on port ${port} (${config.topology}), run ${run?.runId ?? "none yet"}`));
+server.listen(port, () => console.log(`Sluice API on port ${port} (${config.topology}), run ${run?.runId ?? "none yet"}`));
 void automationLoop();

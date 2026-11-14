@@ -51,7 +51,7 @@ export function History({ paneKey, name, node, version }: { paneKey: string; nam
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `chainpay-${name.toLowerCase()}-history.csv`;
+    a.download = `sluice-${name.toLowerCase()}-history.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };

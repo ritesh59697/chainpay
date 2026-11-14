@@ -2,12 +2,12 @@
 
 ## Who buys first
 
-Mid-size Indian IT services firms that subcontract milestone work to registered small agencies and freelancers. The buyer is the CFO or head of accounts payable. They already track the 45-day rule for their tax deduction and file MSME Form I every half year. ChainPay turns that tracking from a spreadsheet into proof.
+Mid-size Indian IT services firms that subcontract milestone work to registered small agencies and freelancers. The buyer is the CFO or head of accounts payable. They already track the 45-day rule for their tax deduction and file MSME Form I every half year. Sluice turns that tracking from a spreadsheet into proof.
 
 ## How we reach them
 
-1. **Chartered accountant firms.** CAs already advise companies on s.37(2)(g) and Form I, and see which clients have dues over 45 days. A CA who recommends ChainPay gets cleaner records at year end. This is the main channel hypothesis.
-2. **Down the chain, for free.** Every prime invites its subcontractors, and every agency invites its freelancers. Each new prime brings several firms below it. An agency that joins through one prime can bring ChainPay to its other primes.
+1. **Chartered accountant firms.** CAs already advise companies on s.37(2)(g) and Form I, and see which clients have dues over 45 days. A CA who recommends Sluice gets cleaner records at year end. This is the main channel hypothesis.
+2. **Down the chain, for free.** Every prime invites its subcontractors, and every agency invites its freelancers. Each new prime brings several firms below it. An agency that joins through one prime can bring Sluice to its other primes.
 3. **Through the accounting tools firms already use.** The CSV history export is the first step. Direct connectors to the accounting software primes use come after the pilot.
 
 ## Pricing hypothesis
@@ -29,4 +29,4 @@ Mid-size Indian IT services firms that subcontract milestone work to registered 
 
 - Selling to the foreign end client. They don't carry the Indian rule.
 - Selling to freelancers directly. They gain the most but can't make the chain adopt it.
-- Building payments in INR ourselves. Banks settle the money; ChainPay holds the acceptance, the obligation and the proof.
+- Building payments in INR ourselves. Banks settle the money; Sluice holds the acceptance, the obligation and the proof.

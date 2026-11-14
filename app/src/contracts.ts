@@ -4,11 +4,11 @@ import type { Command } from "./ledger.js";
 const tid = (module: string, entity: string) => `#${config.daml.name}:${module}:${entity}`;
 
 export const Templates = {
-  Proposal: tid("ChainPay.Subcontract", "SubcontractProposal"),
-  Subcontract: tid("ChainPay.Subcontract", "Subcontract"),
-  Obligation: tid("ChainPay.Subcontract", "PaymentObligation"),
-  Receipt: tid("ChainPay.Subcontract", "PaidReceipt"),
-  Cash: tid("ChainPay.Cash", "DemoCash"),
+  Proposal: tid("Sluice.Subcontract", "SubcontractProposal"),
+  Subcontract: tid("Sluice.Subcontract", "Subcontract"),
+  Obligation: tid("Sluice.Subcontract", "PaymentObligation"),
+  Receipt: tid("Sluice.Subcontract", "PaidReceipt"),
+  Cash: tid("Sluice.Cash", "DemoCash"),
 };
 
 /** Daml Decimal and Int values travel as strings in the JSON API. */

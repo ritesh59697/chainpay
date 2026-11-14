@@ -1,7 +1,7 @@
 -- | A demo payment token. It stands in for a bank transfer so the whole
 -- flow can run on a test network. Real settlement would go over bank rails,
--- with ChainPay recording the obligation and the proof of payment.
-module ChainPay.Cash where
+-- with Sluice recording the obligation and the proof of payment.
+module Sluice.Cash where
 
 template DemoCash
   with

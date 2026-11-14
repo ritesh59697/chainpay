@@ -1,5 +1,5 @@
 {
-  "synchronizer": "chainpay",
+  "synchronizer": "sluice",
   "sequencer": { "publicPort": 10001, "adminPort": 10002 },
   "mediator": { "adminPort": 10003 },
   "nodes": [

@@ -1,4 +1,4 @@
-# ChainPay: one-page brief
+# Sluice: one-page brief
 
 **One client sign-off pays the whole subcontract chain on time, and no firm sees anyone else's contract.**
 
@@ -22,7 +22,7 @@ The scale of late payment is large:
 
 A shared portal for the chain would fix the information gap, but no firm will join one. The IT firm's contract with the client shows what the client pays. Its contract with the agency shows what the agency gets. Put both where the agency can see them and the IT firm's margin is public. So every tier keeps its own records, and the client's acceptance never reaches the bottom of the chain on time.
 
-## What ChainPay does
+## What Sluice does
 
 - Each link in the chain is its own contract between two firms, on Canton.
 - When the client accepts the work, each firm's automation accepts its own supplier's work at once. That starts each tier's own 45-day clock, with its own due date.
@@ -51,7 +51,7 @@ The 45-day deduction rule took effect for FY 2023-24 and carries into the new In
 
 ## Honest status
 
-Working MVP on a local Canton network (one node per firm), with tests and a privacy check. Payments use a demo token. No user interviews have been run. ChainPay tracks dates; it isn't tax or legal advice.
+Working MVP on a local Canton network (one node per firm), with tests and a privacy check. Payments use a demo token. No user interviews have been run. Sluice tracks dates; it isn't tax or legal advice.
 
 ## Sources
 

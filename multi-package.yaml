@@ -1,5 +1,5 @@
 sdk-version: 3.7.1
 
 packages:
-- ./daml/chainpay
-- ./daml/chainpay-tests
+- ./daml/sluice
+- ./daml/sluice-tests

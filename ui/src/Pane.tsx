@@ -1,6 +1,7 @@
 import { Check, CircleDashed, Clock, HardDrive, Wallet } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type LinkView, type Meta, type PaneView, api, daysBetween, money, shortDate } from "./api";
+import { History } from "./History";
 
 type PaneMeta = Meta["panes"][number];
 
@@ -117,6 +118,8 @@ export function Pane({ meta, pane, isRoot, onChanged }: { meta: Meta; pane: Pane
           )}
         </Section>
       )}
+
+      {view && <History paneKey={pane.key} name={pane.hint} node={pane.node} version={view.links.map((l) => `${l.milestone}:${l.status}`).join("|")} />}
 
       {error && (
         <p className="banner banner-error small" role="alert">

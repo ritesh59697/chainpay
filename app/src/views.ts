@@ -84,3 +84,71 @@ export async function paneView(ledger: Ledger, run: RunState, key: string, displ
     cash: cash.filter((c) => c.payload.owner === me.id).map((c) => ({ amount: normDecimal(c.payload.amount), currency: c.payload.currency })),
   };
 }
+
+export interface AuditEntry {
+  offset: number;
+  updateId: string;
+  effectiveAt: string;
+  kind: "proposed" | "signed" | "accepted" | "paid";
+  milestone: string;
+  role: "payer" | "payee";
+  counterparty: string;
+  amount: string;
+  currency: string;
+  dueAt?: string;
+  onTime?: boolean;
+  /** Set when the acceptance was back to back: the upstream milestone that triggered it. */
+  triggeredBy?: string;
+}
+
+const auditKinds: Record<string, AuditEntry["kind"]> = {
+  [entityOf(Templates.Proposal)]: "proposed",
+  [entityOf(Templates.Subcontract)]: "signed",
+  [entityOf(Templates.Obligation)]: "accepted",
+  [entityOf(Templates.Receipt)]: "paid",
+};
+
+function entityOf(templateId: string) {
+  return templateId.split(":").slice(1).join(":");
+}
+
+/**
+ * One party's audit trail for the run: every subcontract step it is a
+ * stakeholder of, read from its own node's transaction stream, with the
+ * ledger's transaction id and time as proof.
+ */
+export async function auditTrail(ledger: Ledger, run: RunState, key: string, displayName: (partyId: string) => string): Promise<AuditEntry[]> {
+  const me = run.parties[key];
+  if (!me) throw new Error(`run has no party ${key}`);
+  const start = run.startOffsets[me.node];
+  if (start === undefined) throw new Error(`run has no start offset for node ${me.node}`);
+  const txs = await ledger.transactionsSeenBy(me.id, start, await ledger.ledgerEnd());
+
+  const entries: AuditEntry[] = [];
+  for (const tx of txs) {
+    for (const e of tx.events ?? []) {
+      if (!("CreatedEvent" in e)) continue;
+      const c = e.CreatedEvent;
+      const kind = auditKinds[entityOf(c.templateId)];
+      if (!kind) continue;
+      const p = c.createArgument as Obligation & Partial<Receipt>;
+      if (p.payer !== me.id && p.payee !== me.id) continue;
+      const role = p.payer === me.id ? "payer" : "payee";
+      entries.push({
+        offset: tx.offset,
+        updateId: tx.updateId,
+        effectiveAt: tx.effectiveAt,
+        kind,
+        milestone: p.terms.milestone,
+        role,
+        counterparty: displayName(role === "payer" ? p.payee : p.payer),
+        amount: normDecimal(p.terms.amount),
+        currency: p.terms.currency,
+        ...(kind === "accepted" || kind === "paid" ? { dueAt: p.dueAt } : {}),
+        ...(kind === "paid" ? { onTime: p.onTime } : {}),
+        ...(kind === "accepted" && p.trigger ? { triggeredBy: p.trigger.milestone } : {}),
+      });
+    }
+  }
+  return entries;
+}

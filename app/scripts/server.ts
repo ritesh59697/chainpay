@@ -6,7 +6,7 @@ import { config } from "../src/config.js";
 import { Nodes } from "../src/network.js";
 import { checkPrivacy, whereContractsLive } from "../src/privacy.js";
 import { type RunState, loadRun, loadScenario, partyId, saveRun } from "../src/scenario.js";
-import { paneView } from "../src/views.js";
+import { auditTrail, paneView } from "../src/views.js";
 
 const port = Number(process.env.API_PORT);
 if (!Number.isInteger(port) || port <= 0) throw new Error("Missing API_PORT in app/.env");
@@ -67,6 +67,11 @@ function send(res: ServerResponse, status: number, value: unknown) {
   res.end(JSON.stringify(value));
 }
 
+/** Display names are off-ledger labels from the scenario file. */
+function displayName(r: RunState) {
+  return (id: string) => scenario.parties.find((p) => r.parties[p.key]?.id === id)?.hint ?? id;
+}
+
 function requireRun(): RunState {
   if (!run) throw Object.assign(new Error("No demo chain yet. Set one up first."), { status: 409 });
   return run;
@@ -108,9 +113,11 @@ const routes: Record<string, (req: IncomingMessage, params: string[]) => Promise
   },
   "GET /api/view/:key": async (_req, [key]) => {
     const r = requireRun();
-    // Display names are off-ledger labels from the scenario file.
-    const nameOf = (id: string) => scenario.parties.find((p) => r.parties[p.key]?.id === id)?.hint ?? id;
-    return paneView(nodes.of(paneKey(key)), r, paneKey(key), nameOf);
+    return paneView(nodes.of(paneKey(key)), r, paneKey(key), displayName(r));
+  },
+  "GET /api/audit/:key": async (_req, [key]) => {
+    const r = requireRun();
+    return auditTrail(nodes.of(paneKey(key)), r, paneKey(key), displayName(r));
   },
   "POST /api/accept/:key": async (req, [key]) => {
     const k = paneKey(key);

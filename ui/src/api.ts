@@ -26,6 +26,21 @@ export interface PaneView {
   cash: { amount: string; currency: string }[];
 }
 
+export interface AuditEntry {
+  offset: number;
+  updateId: string;
+  effectiveAt: string;
+  kind: "proposed" | "signed" | "accepted" | "paid";
+  milestone: string;
+  role: "payer" | "payee";
+  counterparty: string;
+  amount: string;
+  currency: string;
+  dueAt?: string;
+  onTime?: boolean;
+  triggeredBy?: string;
+}
+
 export interface Meta {
   topology: "network" | "sandbox";
   pollMs: number;
@@ -65,11 +80,16 @@ export const api = {
   accept: (key: string, milestone: string) => call("POST", `/accept/${key}`, { milestone }),
   pay: (key: string) => call<{ paid: string[] }>("POST", `/pay/${key}`),
   automation: (key: string, on: boolean) => call<{ on: boolean }>("POST", `/automation/${key}`, { on }),
+  audit: (key: string) => call<AuditEntry[]>("GET", `/audit/${key}`),
   privacy: () => call<PrivacyResult>("GET", "/privacy"),
 };
 
 export function money(amount: string, currency: string): string {
   return new Intl.NumberFormat("en-IN", { style: "currency", currency, maximumFractionDigits: 0 }).format(Number(amount));
+}
+
+export function dateTime(iso: string): string {
+  return new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date(iso));
 }
 
 export function shortDate(iso: string): string {

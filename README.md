@@ -17,6 +17,7 @@ The client's sign-off rarely reaches the bottom of the chain on time. And no tie
 - Each link in the chain (client → IT firm → agency → freelancer) is its own Daml contract, signed by its two firms only.
 - When the client accepts the work, each firm's automation accepts its supplier's work **back to back**, on its own node. That starts each tier's own 45-day clock, with its own due date.
 - Each payer pays with a demo token and gets a receipt marked on time or late.
+- Each firm gets its own history, read from its own node with the ledger's transaction ids, and can download it as CSV for its accountant.
 - The ledger rejects terms over the legal cap. The cap is scenario data with its source, not code.
 
 ## How the privacy holds
@@ -81,6 +82,7 @@ All ports and settings live in `app/.env` and `data/network.json`. To use one `d
 - Payments use a **demo token**, not money. Real firms would settle in INR over bank rails, with Canton holding the acceptances, obligations and proof of payment.
 - The rules apply only to suppliers registered (Udyam) as micro or small enterprises; the demo firms are stated as registered. ChainPay tracks dates. It isn't tax or legal advice.
 - The token's issuer sees token movements, as a bank would. It never sees a subcontract.
+- A back-to-back acceptance carries the upstream milestone id and acceptance time as proof of why it happened. So a payee learns *that* its payer's own client accepted, and when, but never the upstream contract, parties' terms or amount.
 - The network runs every node on one machine, in memory. It shows what each node receives; it isn't a production deployment.
 - The on-screen clock counts real days. The demo doesn't fast-forward time; late payment is covered by the Daml tests.
 - No user interviews were run.

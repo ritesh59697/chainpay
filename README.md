@@ -43,6 +43,13 @@ Which nodes hold each subcontract (of 5):
 
 The checker has its own tests that feed it planted leaks, so its "ok" means something.
 
+## Business materials
+
+- [One-page brief](docs/brief.md): problem, ICP, who pays, why Canton, why now
+- [Validation and metrics](docs/validation.md): public evidence, what we tested, pilot success criteria
+- [Go-to-market](docs/gtm.md): channels, pricing hypothesis, acquisition tests
+- [Pilot plan](docs/pilot-plan.md): three steps with integrations and exit tests
+
 ## What's here
 
 | Path | What it is |

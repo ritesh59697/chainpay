@@ -1,0 +1,13 @@
+<section id="privacy" class="foot">
+<p class="eyebrow">CHECKED, NOT CLAIMED</p>
+<h2 style="width:1500px">We read everything that reached each node. Each contract is on exactly two.</h2>
+<table class="grid-table in" style="--i:1">
+<tr><th style="width:22%">Subcontract</th><th style="width:15.6%">RetailCo</th><th style="width:15.6%">AcmeIT</th><th style="width:15.6%">PixelStudio</th><th style="width:15.6%">Priya</th><th style="width:15.6%">DemoBank</th></tr>
+<tr><td>Retailer → AcmeIT</td><td style="color:#0b6b55">holds</td><td style="color:#0b6b55">holds</td><td style="color:#6b675e">never received</td><td style="color:#6b675e">never received</td><td style="color:#6b675e">never received</td></tr>
+<tr><td>AcmeIT → PixelStudio</td><td style="color:#6b675e">never received</td><td style="color:#0b6b55">holds</td><td style="color:#0b6b55">holds</td><td style="color:#6b675e">never received</td><td style="color:#6b675e">never received</td></tr>
+<tr><td>PixelStudio → Priya</td><td style="color:#6b675e">never received</td><td style="color:#6b675e">never received</td><td style="color:#0b6b55">holds</td><td style="color:#0b6b55">holds</td><td style="color:#6b675e">never received</td></tr>
+</table>
+<p class="body" style="width:1500px">The check also scans every amount each node saw. It has its own tests with planted leaks, and catches all of them.</p>
+<p class="footer">Output of npm run e2e on a local Canton network: one synchronizer, five participant nodes.</p>
+<aside>The privacy check reads the full transaction stream of each participant node, for any party it hosts, and flags any contract the firm isn’t a stakeholder of and any amount outside its own links. The bank, as token issuer, sees token movements but never a subcontract.</aside>
+</section>

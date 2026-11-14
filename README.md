@@ -49,6 +49,8 @@ The checker has its own tests that feed it planted leaks, so its "ok" means some
 - [Validation and metrics](docs/validation.md): public evidence, what we tested, pilot success criteria
 - [Go-to-market](docs/gtm.md): channels, pricing hypothesis, acquisition tests
 - [Pilot plan](docs/pilot-plan.md): three steps with integrations and exit tests
+- [Demo video script](docs/video-script.md): the 3-minute walkthrough, captions doubling as voiceover
+- Pitch deck: 14 slides, source in `docs/deck/`
 
 ## What's here
 
